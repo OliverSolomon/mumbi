@@ -1,0 +1,80 @@
+[
+  {
+    "id": 1,
+    "name": "Sarah Mwangi",
+    "email": "sarah.mwangi@example.com",
+    "date": "2025-03-15",
+    "message": "Mumbi was one of the kindest souls I've ever known. Her laughter was infectious, and her compassion knew no bounds. She will be deeply missed by all who had the privilege of knowing her.",
+    "photoUrl": null,
+    "isAnonymous": false,
+    "approved": true,
+    "created_at": "2025-03-15T10:30:00Z"
+  },
+  {
+    "id": 2,
+    "name": "James Kariuki",
+    "email": "james.kariuki@example.com",
+    "date": "2025-03-14",
+    "message": "I had the honor of working with Mumbi for several years. Her dedication, professionalism, and warm personality made her a joy to be around. Rest in peace, dear friend.",
+    "photoUrl": null,
+    "isAnonymous": false,
+    "approved": true,
+    "created_at": "2025-03-14T14:20:00Z"
+  },
+  {
+    "id": 3,
+    "name": "Anonymous",
+    "email": null,
+    "date": "2025-03-13",
+    "message": "Your memory will forever be a blessing. Thank you for the light you brought into this world.",
+    "photoUrl": null,
+    "isAnonymous": true,
+    "approved": true,
+    "created_at": "2025-03-13T09:15:00Z"
+  },
+  {
+    "id": 4,
+    "name": "Grace Wanjiru",
+    "email": "grace.wanjiru@example.com",
+    "date": "2025-03-12",
+    "message": "Mumbi, you were like a sister to me. I will cherish all the memories we made together. Your spirit lives on in all of us.",
+    "photoUrl": null,
+    "isAnonymous": false,
+    "approved": true,
+    "created_at": "2025-03-12T16:45:00Z"
+  },
+  {
+    "id": 5,
+    "name": "Pending Tribute 1",
+    "email": "pending1@example.com",
+    "date": "2025-03-16",
+    "message": "This is a pending tribute that needs moderation.",
+    "photoUrl": null,
+    "isAnonymous": false,
+    "approved": false,
+    "created_at": "2025-03-16T08:00:00Z"
+  },
+  {
+    "id": 6,
+    "name": "Pending Tribute 2",
+    "email": "pending2@example.com",
+    "date": "2025-03-16",
+    "message": "Another tribute awaiting approval.",
+    "photoUrl": null,
+    "isAnonymous": false,
+    "approved": false,
+    "created_at": "2025-03-16T10:30:00Z"
+  },
+  {
+    "id": 7,
+    "name": "Pending Tribute 3",
+    "email": null,
+    "date": "2025-03-16",
+    "message": "An anonymous pending tribute.",
+    "photoUrl": null,
+    "isAnonymous": true,
+    "approved": false,
+    "created_at": "2025-03-16T12:15:00Z"
+  }
+]
+

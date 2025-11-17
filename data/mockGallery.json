@@ -1,0 +1,52 @@
+[
+  {
+    "id": 1,
+    "src": "/mumbi.jpg",
+    "alt": "Mumbi Judy Jacqueline Kimaru",
+    "caption": "A beautiful portrait",
+    "uploaded_at": "2025-03-10T00:00:00Z"
+  },
+  {
+    "id": 2,
+    "src": "/judy.jpg",
+    "alt": "Mumbi Judy Jacqueline Kimaru",
+    "caption": "Memorial photo",
+    "uploaded_at": "2025-03-10T00:00:00Z"
+  },
+  {
+    "id": 3,
+    "src": "/WhatsApp Image 2025-11-17 at 01.16.51_345d5761.jpg",
+    "alt": "Memorial photo",
+    "caption": "Memorial photo",
+    "uploaded_at": "2025-03-10T00:00:00Z"
+  },
+  {
+    "id": 4,
+    "src": "/WhatsApp Image 2025-11-17 at 01.16.52_683526f5.jpg",
+    "alt": "Memorial photo",
+    "caption": "Memorial photo",
+    "uploaded_at": "2025-03-10T00:00:00Z"
+  },
+  {
+    "id": 5,
+    "src": "/WhatsApp Image 2025-11-17 at 01.16.53_6a9c3e23.jpg",
+    "alt": "Memorial photo",
+    "caption": "Memorial photo",
+    "uploaded_at": "2025-03-10T00:00:00Z"
+  },
+  {
+    "id": 6,
+    "src": "/WhatsApp Image 2025-11-17 at 01.16.54_6b4b01b0.jpg",
+    "alt": "Memorial photo",
+    "caption": "Memorial photo",
+    "uploaded_at": "2025-03-10T00:00:00Z"
+  },
+  {
+    "id": 7,
+    "src": "/WhatsApp Image 2025-11-17 at 01.16.54_93d399d4.jpg",
+    "alt": "Memorial photo",
+    "caption": "Memorial photo",
+    "uploaded_at": "2025-03-10T00:00:00Z"
+  }
+]
+

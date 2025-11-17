@@ -4,9 +4,8 @@ export default function Header() {
   const navLinks = [
     { href: "#home", label: "Home" },
     { href: "#gallery", label: "Gallery" },
-    { href: "#tributes", label: "Leave a Tribute" },
-    { href: "#about", label: "About" },
-    { href: "#contact", label: "Contact" },
+    { href: "#story", label: "Mumbi's Story" },
+    { href: "#contribute", label: "Contribute" },
   ];
 
   return (
