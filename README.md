@@ -2,20 +2,167 @@
 
 A respectful, solemn, and deeply-felt memorial webpage honoring the life and memory of Mumbi Judy Jacqueline Kimaru (1986–2025).
 
-## Current Status: Wireframe Phase
+## Features
 
-This is a **UI-first wireframe implementation** built with Next.js. All features are visually represented but not yet functional. The site includes:
+- ✅ **Google Authentication**: Sign in with Google to leave tributes
+- ✅ **Photo Uploads**: Upload photos with tributes (stored in Supabase Storage)
+- ✅ **Tribute Display**: View all tributes with photos and messages
+- ✅ **Real-time Updates**: Tributes appear immediately after submission
+- ✅ **Responsive Design**: Beautiful, accessible design for all devices
+- ✅ **Floating Action Button**: Easy access to leave a tribute
 
-- ✅ Complete visual wireframe with all planned sections
-- ✅ Under construction banner (visible)
-- ✅ Hero section with memorial information
-- ✅ About/Life summary section
-- ✅ Photo gallery with lightbox
-- ✅ Tributes list (mock data)
-- ✅ Leave a Tribute form (UI only)
-- ✅ Moderation panel wireframe
-- ✅ Admin panel wireframe
-- ✅ Responsive, accessible design
+## Tech Stack
+
+- **Framework**: Next.js 16 (App Router)
+- **Styling**: Tailwind CSS 4
+- **Database**: Supabase (PostgreSQL)
+- **Storage**: Supabase Storage
+- **Authentication**: Supabase Auth (Google OAuth)
+- **Language**: TypeScript
+
+## Prerequisites
+
+- Node.js 18+ installed
+- npm or yarn package manager
+- Supabase account ([supabase.com](https://supabase.com))
+- Google Cloud Console account (for OAuth)
+
+## Quick Start
+
+### 1. Clone and Install
+
+```bash
+# Install dependencies
+npm install
+```
+
+### 2. Set Up Supabase
+
+#### Create Supabase Project
+
+1. Go to [supabase.com](https://supabase.com) and sign up/login
+2. Click **New Project**
+3. Fill in project details:
+   - **Name**: Your project name
+   - **Database Password**: Choose a strong password
+   - **Region**: Select closest region
+4. Wait for project to initialize (2-3 minutes)
+
+#### Get Supabase Credentials
+
+1. Go to **Settings** → **API** in your Supabase project
+2. Copy the following:
+   - **Project URL** → `NEXT_PUBLIC_SUPABASE_URL`
+   - **anon public** key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
+#### Run Database Schema
+
+1. Go to **SQL Editor** in Supabase Dashboard
+2. Open `supabase/schema.sql` from this project
+3. Copy and paste the entire SQL code
+4. Click **Run** to execute
+
+This creates:
+- `tributes` table
+- `gallery_images` table (optional)
+- Row Level Security (RLS) policies
+- Storage policies
+
+#### Create Storage Bucket
+
+1. Go to **Storage** in Supabase Dashboard
+2. Click **Create Bucket**
+3. Configure:
+   - **Name**: `tribute-photos`
+   - **Public**: **Yes** ✅
+   - **File size limit**: 5MB
+   - **Allowed MIME types**: `image/jpeg`, `image/png`, `image/webp`
+4. Click **Create**
+
+### 3. Set Up Google OAuth
+
+#### Create Google OAuth Credentials
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing
+3. Enable **Google+ API**:
+   - Go to **APIs & Services** → **Library**
+   - Search for "Google+ API"
+   - Click **Enable**
+4. Create OAuth 2.0 credentials:
+   - Go to **APIs & Services** → **Credentials**
+   - Click **Create Credentials** → **OAuth 2.0 Client ID**
+   - Application type: **Web application**
+   - Name: Your app name
+   - Authorized redirect URIs:
+     ```
+     https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback
+     ```
+     - Replace `YOUR_PROJECT_REF` with your Supabase project reference
+     - Find it in Supabase Dashboard → Settings → API → Project URL
+     - Example: `https://abcdefghijklmnop.supabase.co/auth/v1/callback`
+5. Copy **Client ID** and **Client Secret**
+
+#### Configure Google OAuth in Supabase
+
+1. Go to **Authentication** → **Providers** in Supabase Dashboard
+2. Find **Google** and click to enable
+3. Paste your credentials:
+   - **Client ID (for OAuth)**: Your Google Client ID
+   - **Client Secret (for OAuth)**: Your Google Client Secret
+4. Click **Save**
+
+#### Set Redirect URLs
+
+In Supabase Dashboard → **Authentication** → **URL Configuration**:
+
+- **Site URL**: 
+  - Development: `http://localhost:3000`
+  - Production: `https://your-domain.com`
+- **Redirect URLs**:
+  - Development: `http://localhost:3000/auth/callback`
+  - Production: `https://your-domain.com/auth/callback`
+
+### 4. Environment Variables
+
+Create a `.env.local` file in the project root:
+
+```env
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+```
+
+**Where to find these:**
+- Supabase Dashboard → Settings → API
+- **Project URL** → `NEXT_PUBLIC_SUPABASE_URL`
+- **anon public** key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
+### 5. Run the Application
+
+```bash
+# Development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm run start
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## Seed Data (Optional)
+
+To add initial tributes to the database:
+
+1. Go to **SQL Editor** in Supabase Dashboard
+2. Open `supabase/seedTributes.sql`
+3. Copy and paste the SQL
+4. Click **Run**
+
+Or use the fallback data in `app/components/TributesList.tsx` which displays automatically if the API fails.
 
 ## Project Structure
 
@@ -23,122 +170,101 @@ This is a **UI-first wireframe implementation** built with Next.js. All features
 mumbi/
 ├── app/
 │   ├── components/          # React components
-│   │   ├── UnderConstructionBanner.tsx
-│   │   ├── Header.tsx
-│   │   ├── Hero.tsx
-│   │   ├── About.tsx
-│   │   ├── Gallery.tsx
-│   │   ├── TributeCard.tsx
-│   │   ├── TributesList.tsx
-│   │   ├── TributeForm.tsx
-│   │   ├── ModerationPanel.tsx
-│   │   ├── AdminPanel.tsx
-│   │   └── Footer.tsx
-│   ├── admin/
-│   │   └── page.tsx          # Admin panel page
-│   ├── page.tsx              # Main memorial page
-│   ├── layout.tsx            # Root layout
-│   └── globals.css           # Global styles
-├── data/
-│   ├── mockTributes.json     # Mock tribute data
-│   └── mockGallery.json      # Mock gallery data
-└── docs/
-    ├── DESIGN_SYSTEM.md      # Design system documentation
-    ├── SUPABASE_INTEGRATION.md  # Supabase schema & code examples
-    ├── INTERACTION_UX.md     # UX flow documentation
-    └── HANDOFF_CHECKLIST.md  # Implementation guide
+│   │   ├── TributeForm.tsx  # Form with photo upload
+│   │   ├── TributesList.tsx # List of tributes
+│   │   ├── TributeCard.tsx  # Individual tribute card
+│   │   └── ...
+│   ├── api/
+│   │   ├── tributes/        # Tribute CRUD API
+│   │   ├── upload/          # Photo upload API
+│   │   └── auth/            # Authentication callbacks
+│   └── page.tsx             # Main page
+├── lib/
+│   └── supabase/            # Supabase client utilities
+├── supabase/
+│   ├── schema.sql           # Database schema
+│   └── seedTributes.sql    # Seed data
+└── data/
+    └── seedTributes.json    # Fallback tribute data
 ```
 
-## Quick Start
+## Features in Detail
 
-### Prerequisites
-- Node.js 18+ installed
-- npm or yarn
+### Authentication
 
-### Installation
+- **Google OAuth**: Users must sign in with Google to leave tributes
+- **Profile Photos**: Automatically uses Google profile photo
+- **Session Management**: Handled by Supabase Auth
 
-1. **Install dependencies**
-   ```bash
-   npm install
-   ```
+### Photo Uploads
 
-2. **Run development server**
-   ```bash
-   npm run dev
-   ```
+- **File Types**: JPEG, PNG, WebP
+- **Max Size**: 5MB
+- **Storage**: Supabase Storage bucket `tribute-photos`
+- **Public Access**: All uploaded photos are publicly viewable
+- **Preview**: See photo before submitting
 
-3. **Open in browser**
-   ```
-   http://localhost:3000
-   ```
+### Tributes
 
-## Design System
+- **No Approval**: All tributes go live immediately
+- **Full Messages**: Complete messages displayed (not truncated)
+- **Photos**: Display uploaded photos in tribute cards
+- **Anonymous Option**: Users can publish anonymously
 
-### Color Palette
-- **Primary Background**: `#FFFFFF` (White)
-- **Secondary Background**: `#F9FAFB` (Gray-50)
-- **Text Primary**: `#1A1A1A` (Gray-900)
-- **Text Secondary**: `#4B5563` (Gray-600)
-- **Footer Background**: `#111827` (Gray-900)
+## Troubleshooting
 
-### Typography
-- **Headings**: Playfair Display (serif) - Elegant, reverent
-- **Body**: Inter (sans-serif) - Readable, modern
+### Google OAuth Not Working
 
-### Tone
-Quiet, reverent, contemplative with generous spacing and minimal animations.
+1. **Check Redirect URI**: Must match exactly in both Google Cloud Console and Supabase
+   - Google: `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback`
+   - Supabase: Set in Authentication → URL Configuration
+2. **Check Credentials**: Ensure Client ID and Secret are correct
+3. **Check API Enabled**: Google+ API must be enabled in Google Cloud Console
+4. **Check Browser Console**: Look for error messages
 
-See `docs/DESIGN_SYSTEM.md` for complete design documentation.
+### Photos Not Uploading
 
-## Features (Wireframe)
+1. **Check Storage Bucket**: Ensure `tribute-photos` bucket exists and is public
+2. **Check Storage Policies**: Run `supabase/schema.sql` to ensure policies are set
+3. **Check File Size**: Must be under 5MB
+4. **Check File Type**: Only JPEG, PNG, WebP allowed
 
-### Main Page (`/`)
-- **Hero Section**: Memorial title, name, dates, and tribute excerpt
-- **About Section**: Life summary and biography
-- **Gallery**: Photo grid with lightbox view
-- **Tributes List**: Scrollable list of tribute cards
-- **Leave a Tribute Form**: Submission form (disabled in wireframe)
-- **Moderation Panel**: Visible wireframe for admin controls
+### Database Errors
 
-### Admin Panel (`/admin`)
-- Pending tributes list
-- Approve/Reject/Delete actions (wireframe only)
-- Gallery management (wireframe only)
+1. **Check Schema**: Ensure `supabase/schema.sql` has been run
+2. **Check RLS Policies**: Verify Row Level Security policies are correct
+3. **Check Supabase Logs**: Go to Logs in Supabase Dashboard
 
-## Next Steps: Supabase Integration
+### Environment Variables
 
-The wireframe is complete. The next phase involves:
+1. **Check `.env.local`**: File must exist in project root
+2. **Check Values**: Ensure URLs and keys are correct
+3. **Restart Dev Server**: After changing `.env.local`, restart `npm run dev`
 
-1. **Database Setup**: Create Supabase tables and storage buckets
-2. **API Routes**: Implement tribute submission and retrieval
-3. **Authentication**: Set up admin authentication
-4. **Image Upload**: Connect photo uploads to Supabase Storage
-5. **Moderation**: Make admin panel functional
+## Deployment
 
-See `docs/HANDOFF_CHECKLIST.md` for detailed step-by-step instructions.
+### Vercel (Recommended)
 
-## Documentation
+1. Push code to GitHub
+2. Import project in Vercel
+3. Add environment variables:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+4. Deploy
 
-- **Design System**: `docs/DESIGN_SYSTEM.md`
-- **Supabase Integration**: `docs/SUPABASE_INTEGRATION.md`
-- **UX & Interactions**: `docs/INTERACTION_UX.md`
-- **Handoff Checklist**: `docs/HANDOFF_CHECKLIST.md`
+### Other Platforms
 
-## Technology Stack
+- **Netlify**: Similar to Vercel
+- **Railway**: Supports Next.js with SSR
+- **AWS Amplify**: Supports Next.js
 
-- **Framework**: Next.js 16 (App Router)
-- **Styling**: Tailwind CSS 4
-- **Typography**: Google Fonts (Playfair Display, Inter)
-- **Language**: TypeScript
-- **Future Backend**: Supabase (PostgreSQL + Storage)
+**Important**: Update redirect URLs in Supabase after deployment!
 
-## Accessibility
+## Support
 
-- WCAG AA compliant color contrast
-- Keyboard navigation support
-- Focus indicators on all interactive elements
-- Semantic HTML structure
-- Screen reader friendly
+- **Next.js Docs**: https://nextjs.org/docs
+- **Supabase Docs**: https://supabase.com/docs
+- **Google OAuth**: https://developers.google.com/identity/protocols/oauth2
 
 ## License
 
@@ -146,4 +272,4 @@ Private memorial site.
 
 ---
 
-**Note**: This is a wireframe. All form submissions and admin actions are disabled. See documentation for integration steps.
+**Note**: This is a production-ready memorial site. All features are functional and ready to use.

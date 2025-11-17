@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 
 interface TributeCardProps {
@@ -9,8 +12,33 @@ interface TributeCardProps {
   isAnonymous?: boolean;
 }
 
+const PREVIEW_LENGTH = 250; // Characters to show before "Read more"
+
 export default function TributeCard({ name, date, message, photoUrl, tributePhotoUrl, isAnonymous }: TributeCardProps) {
   const displayName = isAnonymous ? "Anonymous" : name;
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  // Check if message is long enough to need truncation
+  const needsTruncation = message.length > PREVIEW_LENGTH;
+  
+  // Get preview text (truncate at word boundary)
+  const getPreviewText = (text: string) => {
+    if (text.length <= PREVIEW_LENGTH) return text;
+    
+    // Find the last space before PREVIEW_LENGTH
+    const truncated = text.substring(0, PREVIEW_LENGTH);
+    const lastSpace = truncated.lastIndexOf(' ');
+    const lastNewline = truncated.lastIndexOf('\n');
+    const breakPoint = Math.max(lastSpace, lastNewline);
+    
+    // If we found a good break point, use it; otherwise just truncate
+    return breakPoint > PREVIEW_LENGTH * 0.7 
+      ? text.substring(0, breakPoint)
+      : truncated;
+  };
+  
+  const previewText = getPreviewText(message);
+  const displayText = isExpanded || !needsTruncation ? message : previewText;
 
   return (
     <article className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
@@ -30,7 +58,19 @@ export default function TributeCard({ name, date, message, photoUrl, tributePhot
             <h3 className="font-semibold text-gray-900 font-sans">{displayName}</h3>
             <time className="text-sm text-gray-500 font-sans">{date}</time>
           </div>
-          <p className="text-gray-700 font-sans leading-relaxed whitespace-pre-line">{message}</p>
+          <div className="text-gray-700 font-sans leading-relaxed">
+            <p className="whitespace-pre-line">{displayText}</p>
+            {needsTruncation && (
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="mt-2 text-gray-600 hover:text-gray-900 font-medium text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 rounded underline"
+                aria-expanded={isExpanded}
+                aria-label={isExpanded ? "Show less" : "Show more"}
+              >
+                {isExpanded ? "Read less" : "Read more..."}
+              </button>
+            )}
+          </div>
           {tributePhotoUrl && (
             <div className="mt-4 relative w-full max-w-md aspect-video rounded-lg overflow-hidden border border-gray-200">
               <Image
