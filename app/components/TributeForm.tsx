@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
 
@@ -10,20 +10,16 @@ interface TributeFormProps {
 
 export default function TributeForm({ onTributeSubmitted }: TributeFormProps) {
   const [formData, setFormData] = useState({
+    name: "",
     message: "",
     isAnonymous: false,
   });
   const [user, setUser] = useState<any>(null);
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
-  const [tributePhoto, setTributePhoto] = useState<File | null>(null);
-  const [tributePhotoPreview, setTributePhotoPreview] = useState<string | null>(null);
-  const [tributePhotoUrl, setTributePhotoUrl] = useState<string | null>(null);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -38,6 +34,15 @@ export default function TributeForm({ onTributeSubmitted }: TributeFormProps) {
                         currentUser.user_metadata?.picture || 
                         null;
         setUserPhoto(photoUrl);
+        // Pre-fill name if authenticated
+        if (!formData.name) {
+          setFormData(prev => ({
+            ...prev,
+            name: currentUser.user_metadata?.full_name || 
+                  currentUser.user_metadata?.name || 
+                  currentUser.email?.split('@')[0] || '',
+          }));
+        }
       }
     };
 
@@ -51,6 +56,14 @@ export default function TributeForm({ onTributeSubmitted }: TributeFormProps) {
                         session.user.user_metadata?.picture || 
                         null;
         setUserPhoto(photoUrl);
+        if (!formData.name) {
+          setFormData(prev => ({
+            ...prev,
+            name: session.user.user_metadata?.full_name || 
+                  session.user.user_metadata?.name || 
+                  session.user.email?.split('@')[0] || '',
+          }));
+        }
       } else {
         setUserPhoto(null);
       }
@@ -65,76 +78,6 @@ export default function TributeForm({ onTributeSubmitted }: TributeFormProps) {
       ...prev,
       [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
     }));
-  };
-
-  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
-    if (!validTypes.includes(file.type)) {
-      setError('Invalid file type. Only JPEG, PNG, and WebP are allowed.');
-      return;
-    }
-
-    // Validate file size (5MB max)
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (file.size > maxSize) {
-      setError('File size too large. Maximum size is 5MB.');
-      return;
-    }
-
-    setTributePhoto(file);
-    setError(null);
-
-    // Create preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setTributePhotoPreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-
-    // Upload photo immediately
-    await uploadPhoto(file);
-  };
-
-  const uploadPhoto = async (file: File) => {
-    setUploadingPhoto(true);
-    setError(null);
-
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to upload photo');
-      }
-
-      setTributePhotoUrl(data.url);
-    } catch (err: any) {
-      setError(err.message || 'Failed to upload photo');
-      setTributePhoto(null);
-      setTributePhotoPreview(null);
-    } finally {
-      setUploadingPhoto(false);
-    }
-  };
-
-  const removePhoto = () => {
-    setTributePhoto(null);
-    setTributePhotoPreview(null);
-    setTributePhotoUrl(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
   };
 
   const handleSignIn = async () => {
@@ -154,13 +97,19 @@ export default function TributeForm({ onTributeSubmitted }: TributeFormProps) {
       setError(error.message);
       setLoading(false);
     }
-    // If successful, user will be redirected, so we don't need to set loading to false
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
+
+    // Validate name if not anonymous
+    if (!formData.isAnonymous && !formData.name.trim()) {
+      setError('Please enter your name or select "Publish anonymously"');
+      setSubmitting(false);
+      return;
+    }
 
     try {
       const response = await fetch('/api/tributes', {
@@ -169,10 +118,10 @@ export default function TributeForm({ onTributeSubmitted }: TributeFormProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          name: formData.isAnonymous ? null : formData.name.trim(),
           message: formData.message,
           isAnonymous: formData.isAnonymous,
           photoUrl: userPhoto,
-          tributePhotoUrl: tributePhotoUrl,
         }),
       });
 
@@ -183,13 +132,7 @@ export default function TributeForm({ onTributeSubmitted }: TributeFormProps) {
       }
 
       setSuccess(true);
-      setFormData({ message: "", isAnonymous: false });
-      setTributePhoto(null);
-      setTributePhotoPreview(null);
-      setTributePhotoUrl(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      setFormData({ name: user ? (user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "") : "", message: "", isAnonymous: false });
       
       // Notify parent to refresh tributes list
       if (onTributeSubmitted) {
@@ -207,150 +150,175 @@ export default function TributeForm({ onTributeSubmitted }: TributeFormProps) {
     }
   };
 
-  if (!user) {
-    return (
-      <section id="tributes" className="py-20 bg-gray-50">
-        <div className="max-w-2xl mx-auto px-6">
-          <h2 className="text-3xl md:text-4xl font-serif text-gray-900 mb-8 text-center">
+  return (
+    <section id="tributes" className="py-20 bg-gradient-to-b from-white to-gray-50">
+      <div className="max-w-3xl mx-auto px-6">
+        <div className="text-center mb-12">
+          <h2 className="text-4xl md:text-5xl font-serif text-gray-900 mb-4">
             Leave a Tribute
           </h2>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
-            <p className="text-gray-700 mb-6 font-sans">
-              Please sign in with Google to leave a tribute. Your Google profile photo will be displayed with your tribute.
-            </p>
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-800 text-sm font-sans">
-                {error}
-              </div>
-            )}
-            <button
-              onClick={handleSignIn}
-              disabled={loading}
-              className="px-6 py-3 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-            >
-              {loading ? "Signing in..." : "Sign in with Google"}
-            </button>
-          </div>
+          <p className="text-lg text-gray-600 font-sans max-w-2xl mx-auto">
+            Share your memories, thoughts, or condolences. Your tribute will be published immediately.
+          </p>
         </div>
-      </section>
-    );
-  }
 
-  return (
-    <section id="tributes" className="py-20 bg-gray-50">
-      <div className="max-w-2xl mx-auto px-6">
-        <h2 className="text-3xl md:text-4xl font-serif text-gray-900 mb-8 text-center">
-          Leave a Tribute
-        </h2>
         {success && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-md text-green-800 text-center font-sans">
-            Tribute submitted successfully and is now live!
-          </div>
-        )}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-800 text-center font-sans">
-            {error}
-          </div>
-        )}
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 space-y-6">
-          <div className="flex items-center gap-4 pb-4 border-b border-gray-200">
-            {userPhoto && (
-              <div className="relative w-12 h-12 rounded-full overflow-hidden">
-                <Image
-                  src={userPhoto}
-                  alt="Your profile photo"
-                  fill
-                  className="object-cover"
-                />
+          <div className="mb-6 p-5 bg-green-50 border-l-4 border-green-500 rounded-r-lg shadow-sm">
+            <div className="flex items-center gap-3">
+              <svg className="w-6 h-6 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <div>
+                <p className="font-semibold text-green-900 font-sans">Tribute submitted successfully!</p>
+                <p className="text-sm text-green-700 font-sans mt-1">Your tribute is now live and visible to all visitors.</p>
               </div>
-            )}
-            <div>
-              <p className="font-semibold text-gray-900 font-sans">
-                {user.user_metadata?.full_name || user.user_metadata?.name || user.email}
-              </p>
-              <p className="text-sm text-gray-600 font-sans">{user.email}</p>
             </div>
           </div>
+        )}
 
-          <div>
-            <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
-              Your Tribute <span className="text-gray-500">(required)</span>
-            </label>
-            <textarea
-              id="message"
-              name="message"
-              required
-              rows={6}
-              value={formData.message}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent resize-none"
-              placeholder="Share your memories, thoughts, or condolences..."
-            />
+        {error && (
+          <div className="mb-6 p-5 bg-red-50 border-l-4 border-red-500 rounded-r-lg shadow-sm">
+            <div className="flex items-center gap-3">
+              <svg className="w-6 h-6 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              <p className="text-red-800 font-sans">{error}</p>
+            </div>
           </div>
+        )}
 
-          <div>
-            <label htmlFor="tributePhoto" className="block text-sm font-medium text-gray-700 mb-2">
-              Add a Photo <span className="text-gray-500">(optional)</span>
-            </label>
-            <input
-              ref={fileInputRef}
-              type="file"
-              id="tributePhoto"
-              name="tributePhoto"
-              accept="image/jpeg,image/png,image/webp,image/jpg"
-              onChange={handlePhotoChange}
-              disabled={uploadingPhoto}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            />
-            <p className="mt-1 text-xs text-gray-500 font-sans">
-              Maximum file size: 5MB. Allowed formats: JPEG, PNG, WebP
-            </p>
-            {uploadingPhoto && (
-              <p className="mt-2 text-sm text-gray-600 font-sans">Uploading photo...</p>
-            )}
-            {tributePhotoPreview && (
-              <div className="mt-4 relative w-full max-w-md aspect-video rounded-lg overflow-hidden border border-gray-300">
-                <Image
-                  src={tributePhotoPreview}
-                  alt="Photo preview"
-                  fill
-                  className="object-cover"
-                />
+        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+          {/* User Info Section */}
+          {user && (
+            <div className="bg-gradient-to-r from-gray-50 to-white px-8 py-6 border-b border-gray-200">
+              <div className="flex items-center gap-4">
+                {userPhoto && (
+                  <div className="relative w-14 h-14 rounded-full overflow-hidden ring-2 ring-gray-200">
+                    <Image
+                      src={userPhoto}
+                      alt="Your profile photo"
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                )}
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-900 font-sans text-lg">
+                    {user.user_metadata?.full_name || user.user_metadata?.name || user.email}
+                  </p>
+                  <p className="text-sm text-gray-600 font-sans">{user.email}</p>
+                </div>
                 <button
                   type="button"
-                  onClick={removePhoto}
-                  className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-2 hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                  aria-label="Remove photo"
+                  onClick={() => supabase.auth.signOut()}
+                  className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 rounded-md"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  Sign out
                 </button>
               </div>
+            </div>
+          )}
+
+          {!user && (
+            <div className="bg-blue-50 px-8 py-5 border-b border-blue-100">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-gray-900 font-sans mb-1">
+                    Sign in for a verified profile
+                  </p>
+                  <p className="text-xs text-gray-600 font-sans">
+                    Optional: Sign in with Google to use your verified profile photo and name.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSignIn}
+                  disabled={loading}
+                  className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm whitespace-nowrap"
+                >
+                  {loading ? "Signing in..." : "Sign in with Google"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="p-8 space-y-8">
+            {/* Name Field */}
+            {!formData.isAnonymous && (
+              <div>
+                <label htmlFor="name" className="block text-sm font-semibold text-gray-900 mb-3 font-sans">
+                  Your Name
+                  <span className="ml-2 text-xs font-normal text-gray-500">(required)</span>
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  required={!formData.isAnonymous}
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  disabled={!!user}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent disabled:bg-gray-50 disabled:cursor-not-allowed transition-all font-sans text-gray-900"
+                  placeholder="Enter your name"
+                />
+              </div>
             )}
-          </div>
 
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="isAnonymous"
-              name="isAnonymous"
-              checked={formData.isAnonymous}
-              onChange={handleInputChange}
-              className="w-4 h-4 text-gray-600 border-gray-300 rounded focus:ring-2 focus:ring-gray-400"
-            />
-            <label htmlFor="isAnonymous" className="ml-2 text-sm text-gray-700">
-              Publish anonymously
-            </label>
-          </div>
+            {/* Message Field */}
+            <div>
+              <label htmlFor="message" className="block text-sm font-semibold text-gray-900 mb-3 font-sans">
+                Your Tribute
+                <span className="ml-2 text-xs font-normal text-gray-500">(required)</span>
+              </label>
+              <textarea
+                id="message"
+                name="message"
+                required
+                rows={8}
+                value={formData.message}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent resize-none transition-all font-sans text-gray-900 leading-relaxed"
+                placeholder="Share your memories, thoughts, or condolences..."
+              />
+              <p className="mt-2 text-xs text-gray-500 font-sans">
+                {formData.message.length} / 5000 characters
+              </p>
+            </div>
 
-          <button
-            type="submit"
-            disabled={submitting || !formData.message.trim() || uploadingPhoto}
-            className="w-full py-3 px-6 bg-gray-900 text-white rounded-md font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-          >
-            {submitting ? "Submitting..." : uploadingPhoto ? "Uploading photo..." : "Submit Tribute"}
-          </button>
+            {/* Anonymous Checkbox */}
+            <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <input
+                type="checkbox"
+                id="isAnonymous"
+                name="isAnonymous"
+                checked={formData.isAnonymous}
+                onChange={handleInputChange}
+                className="mt-0.5 w-5 h-5 text-gray-600 border-gray-300 rounded focus:ring-2 focus:ring-gray-400 cursor-pointer"
+              />
+              <label htmlFor="isAnonymous" className="flex-1 text-sm text-gray-700 font-sans cursor-pointer">
+                <span className="font-medium">Publish anonymously</span>
+                <span className="block mt-1 text-gray-600 text-xs">
+                  Your name will not be displayed with your tribute
+                </span>
+              </label>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={submitting || !formData.message.trim() || (!formData.isAnonymous && !formData.name.trim())}
+              className="w-full py-4 px-6 bg-gray-900 text-white rounded-lg font-semibold text-lg hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 shadow-lg hover:shadow-xl transform hover:scale-[1.01] disabled:transform-none"
+            >
+              {submitting ? (
+                <span className="flex items-center justify-center gap-2">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  Submitting...
+                </span>
+              ) : (
+                "Submit Tribute"
+              )}
+            </button>
+          </div>
         </form>
       </div>
     </section>

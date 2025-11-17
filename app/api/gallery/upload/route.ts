@@ -5,7 +5,7 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
     
-    // Authentication is optional for photo uploads
+    // Authentication is optional for gallery uploads
     const { data: { user } } = await supabase.auth.getUser();
     const userId = user?.id || 'anonymous';
 
@@ -28,11 +28,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file size (5MB max)
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    // Validate file size (10MB max for gallery)
+    const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
       return NextResponse.json(
-        { error: 'File size too large. Maximum size is 5MB.' },
+        { error: 'File size too large. Maximum size is 10MB.' },
         { status: 400 }
       );
     }
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     // Upload to Supabase Storage
     const { data, error: uploadError } = await supabase.storage
-      .from('tribute-photos')
+      .from('gallery-photos')
       .upload(filePath, file, {
         cacheControl: '3600',
         upsert: false,
@@ -60,13 +60,30 @@ export async function POST(request: NextRequest) {
 
     // Get public URL
     const { data: urlData } = supabase.storage
-      .from('tribute-photos')
+      .from('gallery-photos')
       .getPublicUrl(filePath);
+
+    // Save to gallery_images table
+    const { data: galleryImage, error: dbError } = await supabase
+      .from('gallery_images')
+      .insert({
+        storage_path: filePath,
+        public_url: urlData.publicUrl,
+        alt_text: file.name,
+      })
+      .select()
+      .single();
+
+    if (dbError) {
+      console.error('Database error:', dbError);
+      // Continue even if DB insert fails - photo is uploaded
+    }
 
     return NextResponse.json({
       success: true,
       path: filePath,
       url: urlData.publicUrl,
+      id: galleryImage?.id,
     });
   } catch (error) {
     console.error('Error uploading file:', error);
@@ -76,3 +93,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+

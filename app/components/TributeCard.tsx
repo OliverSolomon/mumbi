@@ -8,13 +8,12 @@ interface TributeCardProps {
   date: string;
   message: string;
   photoUrl?: string;
-  tributePhotoUrl?: string;
   isAnonymous?: boolean;
 }
 
 const PREVIEW_LENGTH = 250; // Characters to show before "Read more"
 
-export default function TributeCard({ name, date, message, photoUrl, tributePhotoUrl, isAnonymous }: TributeCardProps) {
+export default function TributeCard({ name, date, message, photoUrl, isAnonymous }: TributeCardProps) {
   const displayName = isAnonymous ? "Anonymous" : name;
   const [isExpanded, setIsExpanded] = useState(false);
   
@@ -71,17 +70,6 @@ export default function TributeCard({ name, date, message, photoUrl, tributePhot
               </button>
             )}
           </div>
-          {tributePhotoUrl && (
-            <div className="mt-4 relative w-full max-w-md aspect-video rounded-lg overflow-hidden border border-gray-200">
-              <Image
-                src={tributePhotoUrl}
-                alt={`Photo shared by ${displayName}`}
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, 400px"
-              />
-            </div>
-          )}
         </div>
       </div>
     </article>

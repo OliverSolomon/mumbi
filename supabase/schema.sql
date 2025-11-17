@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS tributes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   name TEXT NOT NULL,
-  email TEXT NOT NULL, -- Required for authentication
+  email TEXT, -- Optional, only for authenticated users
   message TEXT NOT NULL,
   photo_url TEXT, -- URL to user's profile photo from Google
   tribute_photo_url TEXT, -- URL to uploaded photo in Supabase Storage
@@ -90,6 +90,7 @@ DROP POLICY IF EXISTS "Users can read their own tributes" ON tributes;
 DROP POLICY IF EXISTS "Admins can update tributes" ON tributes;
 DROP POLICY IF EXISTS "Admins can delete tributes" ON tributes;
 DROP POLICY IF EXISTS "Allow seed data insertion" ON tributes;
+DROP POLICY IF EXISTS "Anyone can insert tributes" ON tributes;
 
 -- Policy: Authenticated users can insert their own tributes
 CREATE POLICY "Authenticated users can insert tributes"
@@ -98,8 +99,15 @@ CREATE POLICY "Authenticated users can insert tributes"
   TO authenticated
   WITH CHECK (
     auth.uid() = user_id AND
-    auth.jwt() ->> 'email' = email
+    (email IS NULL OR auth.jwt() ->> 'email' = email)
   );
+
+-- Policy: Anyone (including anonymous) can insert tributes
+CREATE POLICY "Anyone can insert tributes"
+  ON tributes
+  FOR INSERT
+  TO anon, authenticated
+  WITH CHECK (true);
 
 -- Policy: Allow inserting tributes without user_id (for seed data)
 -- This can be restricted further if needed
@@ -142,11 +150,11 @@ CREATE POLICY "Public can read gallery images"
   TO anon, authenticated
   USING (true);
 
--- Policy: Authenticated users can insert gallery images
-CREATE POLICY "Authenticated users can insert gallery images"
+-- Policy: Anyone can insert gallery images
+CREATE POLICY "Anyone can insert gallery images"
   ON gallery_images
   FOR INSERT
-  TO authenticated
+  TO anon, authenticated
   WITH CHECK (true);
 
 -- Policy: Authenticated users can update gallery images
@@ -192,8 +200,10 @@ DROP POLICY IF EXISTS "Admins can manage photos" ON storage.objects;
 DROP POLICY IF EXISTS "Authenticated users can upload tribute photos" ON storage.objects;
 DROP POLICY IF EXISTS "Public can read tribute photos" ON storage.objects;
 DROP POLICY IF EXISTS "Authenticated users can delete their tribute photos" ON storage.objects;
+DROP POLICY IF EXISTS "Anyone can upload tribute photos" ON storage.objects;
 DROP POLICY IF EXISTS "Public can read gallery photos" ON storage.objects;
 DROP POLICY IF EXISTS "Authenticated users can upload gallery photos" ON storage.objects;
+DROP POLICY IF EXISTS "Anyone can upload gallery photos" ON storage.objects;
 DROP POLICY IF EXISTS "Authenticated users can update gallery photos" ON storage.objects;
 DROP POLICY IF EXISTS "Authenticated users can delete gallery photos" ON storage.objects;
 
@@ -201,11 +211,11 @@ DROP POLICY IF EXISTS "Authenticated users can delete gallery photos" ON storage
 -- STORAGE POLICIES: TRIBUTE PHOTOS
 -- ============================================
 
--- Policy: Authenticated users can upload tribute photos
-CREATE POLICY "Authenticated users can upload tribute photos"
+-- Policy: Anyone (including anonymous) can upload tribute photos
+CREATE POLICY "Anyone can upload tribute photos"
   ON STORAGE.objects
   FOR INSERT
-  TO authenticated
+  TO anon, authenticated
   WITH CHECK (bucket_id = 'tribute-photos');
 
 -- Policy: Public can read all tribute photos
@@ -215,7 +225,7 @@ CREATE POLICY "Public can read tribute photos"
   TO anon, authenticated
   USING (bucket_id = 'tribute-photos');
 
--- Policy: Users can delete their own tribute photos
+-- Policy: Users can delete their own tribute photos (by filename pattern)
 CREATE POLICY "Authenticated users can delete their tribute photos"
   ON STORAGE.objects
   FOR DELETE
@@ -233,11 +243,11 @@ CREATE POLICY "Public can read gallery photos"
   TO anon, authenticated
   USING (bucket_id = 'gallery-photos');
 
--- Policy: Authenticated users can upload gallery photos
-CREATE POLICY "Authenticated users can upload gallery photos"
+-- Policy: Anyone can upload gallery photos
+CREATE POLICY "Anyone can upload gallery photos"
   ON STORAGE.objects
   FOR INSERT
-  TO authenticated
+  TO anon, authenticated
   WITH CHECK (bucket_id = 'gallery-photos');
 
 -- Policy: Authenticated users can update gallery photos
@@ -261,7 +271,7 @@ CREATE POLICY "Authenticated users can delete gallery photos"
 -- After running this schema:
 -- 
 -- 1. Go to Authentication > Providers in Supabase Dashboard
--- 2. Enable Google OAuth provider
+-- 2. Enable Google OAuth provider (optional - for verified profiles)
 -- 3. Add your Google OAuth credentials:
 --    - Get Client ID and Client Secret from Google Cloud Console
 --    - Add them to Supabase

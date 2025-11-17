@@ -52,7 +52,6 @@ interface Tribute {
   name: string;
   message: string;
   photo_url: string | null;
-  tribute_photo_url: string | null;
   is_anonymous: boolean;
   created_at: string;
 }
@@ -212,7 +211,6 @@ export default function TributesList() {
                 date={formatDate(tribute.created_at)}
                 message={tribute.message}
                 photoUrl={tribute.photo_url || undefined}
-                tributePhotoUrl={tribute.tribute_photo_url || undefined}
                 isAnonymous={tribute.is_anonymous}
               />
             ))}
