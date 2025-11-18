@@ -16,7 +16,7 @@ export default function Header() {
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-200">
       <nav className="max-w-6xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-          <Link href="#home" className="text-xl font-serif text-gray-900 hover:text-gray-700 transition-colors">
+          <Link href="/" className="text-xl font-serif text-gray-900 hover:text-gray-700 transition-colors">
             Mumbi Judy Jacqueline Kimaru
           </Link>
           <ul className="hidden md:flex items-center gap-8">
