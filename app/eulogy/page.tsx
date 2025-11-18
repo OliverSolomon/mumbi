@@ -5,7 +5,7 @@ export default function Page({ searchParams }: { searchParams?: { url?: string }
 
   return (
     <main className="py-12">
-      <div className="lg:max-w-5xl mx-auto px-6">
+      <div className=" mx-auto lg:px-6">
         <EulogyViewer initialUrl={url} />
       </div>
     </main>
