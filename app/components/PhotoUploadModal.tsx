@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
+import Link from "next/link";
+import { User } from "@supabase/supabase-js";
 
 interface PhotoUploadModalProps {
   isOpen: boolean;
@@ -12,8 +14,6 @@ interface PhotoUploadModalProps {
 
 export default function PhotoUploadModal({ isOpen, onClose, onUploadSuccess }: PhotoUploadModalProps) {
   const supabase = createClient();
-  const [user, setUser] = useState<any>(null);
-  const [signingIn, setSigningIn] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -24,26 +24,6 @@ export default function PhotoUploadModal({ isOpen, onClose, onUploadSuccess }: P
 
   if (!isOpen) return null;
 
-  useEffect(() => {
-    let mounted = true;
-
-    const checkUser = async () => {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      if (!mounted) return;
-      setUser(currentUser);
-    };
-
-    checkUser();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, [supabase]);
 
   const handleFileSelect = (selectedFile: File) => {
     // Validate file type
@@ -95,47 +75,16 @@ export default function PhotoUploadModal({ isOpen, onClose, onUploadSuccess }: P
     e.stopPropagation();
     setIsDragging(false);
 
-    if (!user) {
-      setError('Please sign in to upload photos.');
-      return;
-    }
-
     const droppedFile = e.dataTransfer.files?.[0];
     if (droppedFile) {
       handleFileSelect(droppedFile);
     }
   };
 
-  const handleSignIn = async () => {
-    setSigningIn(true);
-    setError(null);
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/#gallery`,
-          queryParams: { access_type: 'offline', prompt: 'consent' },
-        },
-      });
 
-      if (error) {
-        setError(error.message);
-        setSigningIn(false);
-      }
-    } catch (err: any) {
-      setError(err?.message || String(err));
-      setSigningIn(false);
-    }
-  };
 
   const handleUpload = async () => {
     if (!file) return;
-
-    if (!user) {
-      setError('Please sign in to upload photos.');
-      return;
-    }
-
     setUploading(true);
     setError(null);
 
@@ -215,26 +164,7 @@ export default function PhotoUploadModal({ isOpen, onClose, onUploadSuccess }: P
             </div>
           )}
 
-          {!user && (
-            <div className="p-4 bg-blue-50 border-l-4 border-blue-100 rounded-r-lg">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-sm font-medium text-gray-900 font-sans mb-1">Sign in to upload photos</p>
-                  <p className="text-xs text-gray-600 font-sans">Signing in lets us attach your profile and helps moderate uploads.</p>
-                </div>
-                <div>
-                  <button
-                    type="button"
-                    onClick={handleSignIn}
-                    disabled={signingIn}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                  >
-                    {signingIn ? 'Signing in...' : 'Sign in with Google'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+     
 
           {!preview ? (
             <div
@@ -243,10 +173,6 @@ export default function PhotoUploadModal({ isOpen, onClose, onUploadSuccess }: P
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onClick={() => {
-                if (!user) {
-                  setError('Please sign in to upload photos.');
-                  return;
-                }
                 fileInputRef.current?.click();
               }}
               className={`
@@ -263,7 +189,7 @@ export default function PhotoUploadModal({ isOpen, onClose, onUploadSuccess }: P
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/jpg"
                 onChange={handleFileInputChange}
-                disabled={uploading || !user}
+                disabled={uploading }
                 className="hidden"
               />
               <div className="flex flex-col items-center justify-center gap-4 text-center">
@@ -335,7 +261,7 @@ export default function PhotoUploadModal({ isOpen, onClose, onUploadSuccess }: P
             <button
               type="button"
               onClick={handleUpload}
-              disabled={!file || uploading || !user}
+              disabled={!file || uploading }
               className="flex-1 px-4 py-3 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
             >
               {uploading ? (
@@ -344,7 +270,7 @@ export default function PhotoUploadModal({ isOpen, onClose, onUploadSuccess }: P
                   Uploading...
                 </span>
               ) : (
-                user ? "Upload Photo" : "Sign in to upload"
+                "Upload Photo"
               )}
             </button>
           </div>
