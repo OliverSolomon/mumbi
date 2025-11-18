@@ -6,8 +6,8 @@ import { useState } from "react";
 export default function Header() {
   const navLinks = [
     { href: "#home", label: "Home" },
+    { href: "/eulogy", label: "The Eulogy" },
     { href: "#gallery", label: "Gallery" },
-    { href: "#story", label: "Mumbi's Story" },
     { href: "#contribute", label: "Contribute" },
   ];
   const [open, setOpen] = useState(false);

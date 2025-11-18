@@ -27,6 +27,7 @@ export default function Hero() {
             <p className="text-lg text-gray-600 font-sans">
               1986 – 2025
             </p>
+     
             <div className="pt-4 space-y-3 text-gray-700 font-sans leading-relaxed">
               <p>
                 A beloved daughter, sister, and friend whose radiant smile and generous spirit touched all who knew her.
@@ -34,6 +35,14 @@ export default function Hero() {
               <p>
                 Her memory lives on in the hearts of those she loved and inspired.
               </p>
+            </div>
+                   <div className="pt-6">
+              <a
+                href="/eulogy"
+                className="inline-block px-6 py-3 bg-gray-900 text-white rounded-md font-medium hover:bg-gray-800 transition-colors"
+              >
+                Read the Eulogy
+              </a>
             </div>
           </div>
         </div>
