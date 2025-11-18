@@ -92,17 +92,9 @@ DROP POLICY IF EXISTS "Admins can delete tributes" ON tributes;
 DROP POLICY IF EXISTS "Allow seed data insertion" ON tributes;
 DROP POLICY IF EXISTS "Anyone can insert tributes" ON tributes;
 
--- Policy: Authenticated users can insert their own tributes
-CREATE POLICY "Authenticated users can insert tributes"
-  ON tributes
-  FOR INSERT
-  TO authenticated
-  WITH CHECK (
-    auth.uid() = user_id AND
-    (email IS NULL OR auth.jwt() ->> 'email' = email)
-  );
-
 -- Policy: Anyone (including anonymous) can insert tributes
+-- This single policy allows both anonymous and authenticated users
+-- No restrictions on user_id or email to allow anonymous submissions
 CREATE POLICY "Anyone can insert tributes"
   ON tributes
   FOR INSERT
