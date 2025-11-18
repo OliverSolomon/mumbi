@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     // Save to gallery_images table
     const { data: galleryImage, error: dbError } = await supabase
-      .from('tribute-photos')
+      .from('gallery_images')
       .insert({
         storage_path: filePath,
         public_url: urlData.publicUrl,
