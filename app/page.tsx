@@ -37,7 +37,7 @@ export default function Home() {
       <main>
         <Hero />
         <MumbisStory />
-        <LiveStream videoId={process.env.NEXT_PUBLIC_YOUTUBE_LIVE_ID} />
+        <LiveStream  />
         <Gallery />
         <TributesList />
         <TributeForm onTributeSubmitted={() => {
