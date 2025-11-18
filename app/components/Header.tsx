@@ -5,10 +5,10 @@ import { useState } from "react";
 
 export default function Header() {
   const navLinks = [
-    { href: "#home", label: "Home" },
+    { href: "/", label: "Home" },
     { href: "/eulogy", label: "The Eulogy" },
-    { href: "#gallery", label: "Gallery" },
-    { href: "#contribute", label: "Contribute" },
+    { href: "/#gallery", label: "Gallery" },
+    { href: "/#contribute", label: "Contribute" },
   ];
   const [open, setOpen] = useState(false);
 
