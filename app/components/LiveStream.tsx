@@ -19,13 +19,7 @@ export default function LiveStream({  }: LiveStreamProps) {
 
         {src ? (
           <div className="w-full aspect-video rounded-lg overflow-hidden border border-gray-200 shadow-sm">
-            <iframe
-              src={src}
-              title="Burial ceremony live stream"
-              className="w-full h-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
+        <iframe width="560" height="315" src="https://www.youtube.com/embed/JQjfKX6Gsb8?si=nYpiOYjzB_dCa8z3" title="YouTube video player"  allow="accelerometer; autoplay; fullScreen; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"></iframe>
           </div>
         ) : (
           <div className="w-full aspect-video rounded-lg overflow-hidden border border-gray-200 bg-gradient-to-b from-gray-800 to-gray-900 flex items-center justify-center">
