@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     // Generate unique filename
     const fileExt = file.name.split('.').pop();
     const fileName = `${userId}-${Date.now()}.${fileExt}`;
-    const filePath = `tribute-photos/${fileName}`;
+    const filePath = `${fileName}`;
 
     // Upload to Supabase Storage
     const { data, error: uploadError } = await supabase.storage

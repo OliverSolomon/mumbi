@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     // Upload to Supabase Storage
     const { data, error: uploadError } = await supabase.storage
-      .from('gallery-photos')
+      .from('tribute-photos')
       .upload(filePath, file, {
         cacheControl: '3600',
         upsert: false,
@@ -60,12 +60,12 @@ export async function POST(request: NextRequest) {
 
     // Get public URL
     const { data: urlData } = supabase.storage
-      .from('gallery-photos')
+      .from('tribute-photos')
       .getPublicUrl(filePath);
 
     // Save to gallery_images table
     const { data: galleryImage, error: dbError } = await supabase
-      .from('gallery_images')
+      .from('tribute-photos')
       .insert({
         storage_path: filePath,
         public_url: urlData.publicUrl,
