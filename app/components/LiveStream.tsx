@@ -38,7 +38,6 @@ export default function LiveStream({  }: LiveStreamProps) {
               </div>
               <h3 className="text-white text-xl font-semibold mt-4">Live Stream Not Started</h3>
               <p className="mt-2 text-sm text-gray-300">The live stream will appear here when it begins. Please check back shortly.</p>
-              <p className="mt-3 text-xs text-gray-400">To configure the stream, set <code className="bg-gray-800 px-1 py-0.5 rounded">NEXT_PUBLIC_YOUTUBE_LIVE_ID</code> to your YouTube live ID or URL.</p>
             </div>
           </div>
         )}
