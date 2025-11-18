@@ -4,8 +4,30 @@ interface LiveStreamProps {
 }
 
 export default function LiveStream({  }: LiveStreamProps) {
-  
-  const src =  process.env.LIVESTREAM_URL??'https://www.youtube.com/live/JQjfKX6Gsb8?si=z5VCLDRn6qo-Bpoz'
+  const raw = process.env.NEXT_PUBLIC_LIVESTREAM_URL ?? 'https://www.youtube.com/live/JQjfKX6Gsb8?si=z5VCLDRn6qo-Bpoz';
+
+  const extractId = (v?: string | null) => {
+    if (!v) return null;
+    try {
+      const u = new URL(v);
+      if (u.hostname.includes('youtube.com')) {
+        // handle watch?v=ID and /live/ID
+        const vParam = u.searchParams.get('v');
+        if (vParam) return vParam;
+        const parts = u.pathname.split('/').filter(Boolean);
+        return parts[parts.length - 1] || null;
+      }
+      if (u.hostname.includes('youtu.be')) {
+        return u.pathname.slice(1);
+      }
+      return v;
+    } catch {
+      return v;
+    }
+  };
+
+  const id = extractId(raw);
+  const src = id ? `https://www.youtube.com/embed/${id}?autoplay=0&rel=0` : null;
 
   return (
     <section id="livestream" className="py-12 bg-white">
@@ -19,7 +41,13 @@ export default function LiveStream({  }: LiveStreamProps) {
 
         {src ? (
           <div className="w-full aspect-video rounded-lg overflow-hidden border border-gray-200 shadow-sm">
-        <iframe width="560" height="315" src="https://www.youtube.com/embed/JQjfKX6Gsb8?si=nYpiOYjzB_dCa8z3" title="YouTube video player"  allow="accelerometer; autoplay; fullScreen; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"></iframe>
+            <iframe
+              src={src}
+              title="Burial ceremony live stream"
+              className="w-full h-full block"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
           </div>
         ) : (
           <div className="w-full aspect-video rounded-lg overflow-hidden border border-gray-200 bg-gradient-to-b from-gray-800 to-gray-900 flex items-center justify-center">
