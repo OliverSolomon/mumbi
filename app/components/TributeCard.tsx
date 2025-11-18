@@ -42,7 +42,7 @@ export default function TributeCard({ name, date, message, photoUrl, isAnonymous
   return (
     <article className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
       <div className="flex gap-4">
-        {photoUrl && (
+        {/* {photoUrl && (
           <div className="relative w-16 h-16 flex-shrink-0 rounded-full overflow-hidden">
             <Image
               src={photoUrl}
@@ -51,7 +51,7 @@ export default function TributeCard({ name, date, message, photoUrl, isAnonymous
               className="object-cover"
             />
           </div>
-        )}
+        )} */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between mb-2">
             <h3 className="font-semibold text-gray-900 font-sans">{displayName}</h3>
