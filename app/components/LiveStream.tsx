@@ -5,7 +5,7 @@ interface LiveStreamProps {
 
 export default function LiveStream({  }: LiveStreamProps) {
   
-  const src =  process.env.LIVESTREAM_URL;
+  const src =  process.env.LIVESTREAM_URL??'https://www.youtube.com/live/JQjfKX6Gsb8?si=z5VCLDRn6qo-Bpoz'
 
   return (
     <section id="livestream" className="py-12 bg-white">
