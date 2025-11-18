@@ -29,8 +29,20 @@ export default function Contribute() {
 
             <h4 className="text-xl font-serif text-gray-900 mt-6 mb-3">Contact Information</h4>
             <p>
+              For contributions to the family, please contact:
+            </p>
+            <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="font-semibold text-gray-900 mb-1">Patricia</p>
+              <a 
+                href="tel:+254729552789" 
+                className="text-blue-600 hover:text-blue-800 transition-colors font-medium"
+              >
+                +254 729 552789
+              </a>
+            </div>
+            <p className="mt-4">
               For questions, to submit photos, or for any other contributions, please reach out 
-              through the contact methods provided by the family.
+              through the contact information above.
             </p>
 
             <div className="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
