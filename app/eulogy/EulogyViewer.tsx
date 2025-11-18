@@ -28,12 +28,12 @@ export default function EulogyViewer({ initialUrl }: Props) {
         </a>
       </div>
       {url ? (
-        <div className="w-full border rounded-lg overflow-hidden">
-          <iframe
+        <div className="w-full border rounded-lg overflow-auto">
+          <embed
             src={url}
+            type="application/pdf"
             title="Eulogy PDF"
-            className="w-full h-[80vh]"
-            sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+            className="w-full h-[90vh]"
           />
         </div>
       ) : (
