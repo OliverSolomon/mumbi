@@ -60,14 +60,16 @@ export default function TributeCard({ name, date, message, photoUrl, isAnonymous
           <div className="text-gray-700 font-sans leading-relaxed">
             <p className="whitespace-pre-line">{displayText}</p>
             {needsTruncation && (
-              <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="mt-2 text-gray-600 hover:text-gray-900 font-medium text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 rounded underline"
-                aria-expanded={isExpanded}
-                aria-label={isExpanded ? "Show less" : "Show more"}
-              >
-                {isExpanded ? "Read less" : "Read more..."}
-              </button>
+              <div className="flex justify-end mt-2">
+                <button
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="text-gray-600 hover:text-gray-900 font-medium text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 rounded underline"
+                  aria-expanded={isExpanded}
+                  aria-label={isExpanded ? "Show less" : "Show more"}
+                >
+                  {isExpanded ? "Read less" : "Read more..."}
+                </button>
+              </div>
             )}
           </div>
         </div>

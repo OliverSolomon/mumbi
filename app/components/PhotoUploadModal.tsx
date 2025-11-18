@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
-import Link from "next/link";
-import { User } from "@supabase/supabase-js";
 
 interface PhotoUploadModalProps {
   isOpen: boolean;
@@ -12,11 +10,19 @@ interface PhotoUploadModalProps {
   onUploadSuccess: () => void;
 }
 
+interface FileWithPreview {
+  file: File;
+  preview: string;
+  id: string;
+  uploading?: boolean;
+  error?: string;
+}
+
 export default function PhotoUploadModal({ isOpen, onClose, onUploadSuccess }: PhotoUploadModalProps) {
   const supabase = createClient();
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -24,37 +30,72 @@ export default function PhotoUploadModal({ isOpen, onClose, onUploadSuccess }: P
 
   if (!isOpen) return null;
 
-
-  const handleFileSelect = (selectedFile: File) => {
+  const validateFile = (file: File): string | null => {
     // Validate file type
     const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
-    if (!validTypes.includes(selectedFile.type)) {
-      setError('Invalid file type. Only JPEG, PNG, and WebP are allowed.');
-      return;
+    if (!validTypes.includes(file.type)) {
+      return 'Invalid file type. Only JPEG, PNG, and WebP are allowed.';
     }
 
     // Validate file size (10MB max for gallery)
     const maxSize = 10 * 1024 * 1024; // 10MB
-    if (selectedFile.size > maxSize) {
-      setError('File size too large. Maximum size is 10MB.');
-      return;
+    if (file.size > maxSize) {
+      return `File "${file.name}" is too large. Maximum size is 10MB.`;
     }
 
-    setFile(selectedFile);
-    setError(null);
-
-    // Create preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPreview(reader.result as string);
-    };
-    reader.readAsDataURL(selectedFile);
+    return null;
   };
 
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      handleFileSelect(selectedFile);
+  const createPreview = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFilesSelect = async (selectedFiles: File[]) => {
+    setError(null);
+    const validFiles: FileWithPreview[] = [];
+    const errors: string[] = [];
+
+    for (const file of selectedFiles) {
+      const validationError = validateFile(file);
+      if (validationError) {
+        errors.push(validationError);
+        continue;
+      }
+
+      try {
+        const preview = await createPreview(file);
+        validFiles.push({
+          file,
+          preview,
+          id: `${Date.now()}-${Math.random()}`,
+        });
+      } catch (err) {
+        errors.push(`Failed to create preview for "${file.name}"`);
+      }
+    }
+
+    if (errors.length > 0) {
+      setError(errors.join('\n'));
+    }
+
+    if (validFiles.length > 0) {
+      setFiles(prev => [...prev, ...validFiles]);
+    }
+  };
+
+  const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    if (selectedFiles.length > 0) {
+      await handleFilesSelect(selectedFiles);
+    }
+    // Reset input to allow selecting the same files again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -70,66 +111,110 @@ export default function PhotoUploadModal({ isOpen, onClose, onUploadSuccess }: P
     setIsDragging(false);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
 
-    const droppedFile = e.dataTransfer.files?.[0];
-    if (droppedFile) {
-      handleFileSelect(droppedFile);
+    const droppedFiles = Array.from(e.dataTransfer.files || []);
+    if (droppedFiles.length > 0) {
+      await handleFilesSelect(droppedFiles);
     }
   };
 
 
 
   const handleUpload = async () => {
-    if (!file) return;
+    if (files.length === 0) return;
     setUploading(true);
     setError(null);
+    setUploadProgress({});
 
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
+    const uploadPromises = files.map(async (fileWithPreview) => {
+      const fileId = fileWithPreview.id;
+      setUploadProgress(prev => ({ ...prev, [fileId]: 0 }));
 
-      const response = await fetch('/api/gallery/upload', {
-        method: 'POST',
-        body: formData,
-      });
+      // Update file state to show uploading
+      setFiles(prev => prev.map(f => 
+        f.id === fileId ? { ...f, uploading: true, error: undefined } : f
+      ));
 
-      const data = await response.json();
+      try {
+        const formData = new FormData();
+        formData.append('file', fileWithPreview.file);
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to upload photo');
+        const response = await fetch('/api/gallery/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to upload photo');
+        }
+
+        setUploadProgress(prev => ({ ...prev, [fileId]: 100 }));
+        
+        // Mark as successfully uploaded
+        setFiles(prev => prev.map(f => 
+          f.id === fileId ? { ...f, uploading: false } : f
+        ));
+
+        return { success: true, fileId };
+      } catch (err: any) {
+        setFiles(prev => prev.map(f => 
+          f.id === fileId ? { ...f, uploading: false, error: err.message || 'Upload failed' } : f
+        ));
+        return { success: false, fileId, error: err.message };
       }
+    });
 
-      // Reset form
-      setFile(null);
-      setPreview(null);
+    const results = await Promise.all(uploadPromises);
+    const successCount = results.filter(r => r.success).length;
+    const failedCount = results.filter(r => !r.success).length;
+
+    if (failedCount > 0) {
+      setError(`${failedCount} photo(s) failed to upload. ${successCount} photo(s) uploaded successfully.`);
+    }
+
+    if (successCount > 0) {
+      // Reset form after successful uploads
+      setFiles([]);
+      setUploadProgress({});
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
 
       // Notify parent and close
       onUploadSuccess();
-      onClose();
-    } catch (err: any) {
-      setError(err.message || 'Failed to upload photo');
-    } finally {
-      setUploading(false);
+      if (failedCount === 0) {
+        onClose();
+      }
     }
+
+    setUploading(false);
   };
 
   const handleClose = () => {
     if (!uploading) {
-      setFile(null);
-      setPreview(null);
+      setFiles([]);
+      setUploadProgress({});
       setError(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
       onClose();
     }
+  };
+
+  const removeFile = (fileId: string) => {
+    setFiles(prev => prev.filter(f => f.id !== fileId));
+    setUploadProgress(prev => {
+      const newProgress = { ...prev };
+      delete newProgress[fileId];
+      return newProgress;
+    });
   };
 
   return (
@@ -164,9 +249,7 @@ export default function PhotoUploadModal({ isOpen, onClose, onUploadSuccess }: P
             </div>
           )}
 
-     
-
-          {!preview ? (
+          {files.length === 0 ? (
             <div
               ref={dropZoneRef}
               onDragOver={handleDragOver}
@@ -189,14 +272,15 @@ export default function PhotoUploadModal({ isOpen, onClose, onUploadSuccess }: P
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/jpg"
                 onChange={handleFileInputChange}
-                disabled={uploading }
+                disabled={uploading}
+                multiple
                 className="hidden"
               />
               <div className="flex flex-col items-center justify-center gap-4 text-center">
                 {uploading ? (
                   <>
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-600"></div>
-                    <p className="text-gray-700 font-medium font-sans">Uploading photo...</p>
+                    <p className="text-gray-700 font-medium font-sans">Uploading photos...</p>
                   </>
                 ) : (
                   <>
@@ -207,10 +291,10 @@ export default function PhotoUploadModal({ isOpen, onClose, onUploadSuccess }: P
                     </div>
                     <div>
                       <p className="text-gray-700 font-semibold font-sans text-lg mb-2">
-                        {isDragging ? 'Drop your photo here' : 'Click to upload or drag and drop'}
+                        {isDragging ? 'Drop your photos here' : 'Click to upload or drag and drop'}
                       </p>
                       <p className="text-sm text-gray-500 font-sans">
-                        JPEG, PNG, or WebP (max 10MB)
+                        JPEG, PNG, or WebP (max 10MB each). You can select multiple photos.
                       </p>
                     </div>
                   </>
@@ -219,32 +303,60 @@ export default function PhotoUploadModal({ isOpen, onClose, onUploadSuccess }: P
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="relative w-full rounded-xl overflow-hidden border-2 border-gray-200 shadow-sm">
-                <div className="relative aspect-video bg-gray-100">
-                  <Image
-                    src={preview}
-                    alt="Photo preview"
-                    fill
-                    className="object-contain"
-                  />
-                </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-[400px] overflow-y-auto p-2">
+                {files.map((fileWithPreview) => (
+                  <div key={fileWithPreview.id} className="relative group">
+                    <div className="relative aspect-square rounded-lg overflow-hidden border-2 border-gray-200 shadow-sm bg-gray-100">
+                      <Image
+                        src={fileWithPreview.preview}
+                        alt={fileWithPreview.file.name}
+                        fill
+                        className="object-cover"
+                      />
+                      {fileWithPreview.uploading && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                          <div className="text-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+                            <p className="text-white text-xs">
+                              {uploadProgress[fileWithPreview.id] || 0}%
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      {fileWithPreview.error && (
+                        <div className="absolute inset-0 bg-red-500/90 flex items-center justify-center p-2">
+                          <p className="text-white text-xs text-center">{fileWithPreview.error}</p>
+                        </div>
+                      )}
+                      {!fileWithPreview.uploading && (
+                        <button
+                          type="button"
+                          onClick={() => removeFile(fileWithPreview.id)}
+                          className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1.5 hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 shadow-lg opacity-0 group-hover:opacity-100"
+                          aria-label="Remove photo"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                    <p className="mt-1 text-xs text-gray-600 truncate" title={fileWithPreview.file.name}>
+                      {fileWithPreview.file.name}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              {files.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setFile(null);
-                    setPreview(null);
-                    if (fileInputRef.current) {
-                      fileInputRef.current.value = '';
-                    }
-                  }}
-                  className="absolute top-3 right-3 bg-red-600 text-white rounded-full p-2 hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 shadow-lg"
-                  aria-label="Remove photo"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  + Add More Photos
                 </button>
-              </div>
+              )}
             </div>
           )}
 
@@ -261,16 +373,16 @@ export default function PhotoUploadModal({ isOpen, onClose, onUploadSuccess }: P
             <button
               type="button"
               onClick={handleUpload}
-              disabled={!file || uploading }
+              disabled={files.length === 0 || uploading}
               className="flex-1 px-4 py-3 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
             >
               {uploading ? (
                 <span className="flex items-center justify-center gap-2">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Uploading...
+                  Uploading {files.filter(f => f.uploading).length} of {files.length}...
                 </span>
               ) : (
-                "Upload Photo"
+                `Upload ${files.length} Photo${files.length !== 1 ? 's' : ''}`
               )}
             </button>
           </div>

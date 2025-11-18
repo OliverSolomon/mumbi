@@ -56,31 +56,50 @@ interface Tribute {
   created_at: string;
 }
 
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 export default function TributesList() {
   const [tributes, setTributes] = useState<Tribute[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
 
-  const fetchTributes = useCallback(async () => {
+  const fetchTributes = useCallback(async (page: number = 1) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('/api/tributes');
+      const response = await fetch(`/api/tributes?page=${page}&limit=10`);
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to fetch tributes');
       }
 
-      setTributes(data.tributes || []);
+      // Sort by created_at DESC to ensure latest first (in case API doesn't)
+      const sortedTributes = (data.tributes || []).sort((a: Tribute, b: Tribute) => {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+
+      setTributes(sortedTributes);
+      setPagination(data.pagination || null);
       setError(null);
     } catch (err: any) {
       console.error('Error fetching tributes:', err);
       setError(err.message || 'Failed to load tributes');
       // Fallback to seed data if API fails
       if (retryCount === 0) {
-        const fallbackTributes: Tribute[] = seedTributes.map((tribute, index) => ({
+        // Sort fallback data by created_at DESC (latest first)
+        const sortedSeedTributes = [...seedTributes].sort((a, b) => {
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+        const fallbackTributes: Tribute[] = sortedSeedTributes.slice(0, 10).map((tribute, index) => ({
           id: `seed-${index}`,
           name: tribute.name,
           message: tribute.message,
@@ -89,6 +108,12 @@ export default function TributesList() {
           created_at: tribute.created_at,
         }));
         setTributes(fallbackTributes);
+        setPagination({
+          page: 1,
+          limit: 10,
+          total: seedTributes.length,
+          totalPages: Math.ceil(seedTributes.length / 10),
+        });
         setError(null); // Clear error since we have fallback data
       }
     } finally {
@@ -97,12 +122,15 @@ export default function TributesList() {
   }, [retryCount]);
 
   useEffect(() => {
-    fetchTributes();
-  }, [fetchTributes]);
+    fetchTributes(currentPage);
+  }, [fetchTributes, currentPage]);
 
   // Expose refresh function to parent via window (for TributeForm callback)
   useEffect(() => {
-    (window as any).refreshTributes = fetchTributes;
+    (window as any).refreshTributes = () => {
+      setCurrentPage(1); // Reset to first page to show latest tribute
+      fetchTributes(1);
+    };
     return () => {
       delete (window as any).refreshTributes;
     };
@@ -110,7 +138,16 @@ export default function TributesList() {
 
   const handleRetry = () => {
     setRetryCount(prev => prev + 1);
-    fetchTributes();
+    fetchTributes(currentPage);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    // Scroll to top of tributes section
+    const tributesSection = document.getElementById('tributes');
+    if (tributesSection) {
+      tributesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -203,18 +240,91 @@ export default function TributesList() {
             <p>Be the first to leave a tribute.</p>
           </div>
         ) : (
-          <div className="space-y-6">
-            {tributes.map((tribute) => (
-              <TributeCard
-                key={tribute.id}
-                name={tribute.name}
-                date={formatDate(tribute.created_at)}
-                message={tribute.message}
-                photoUrl={tribute.photo_url || undefined}
-                isAnonymous={tribute.is_anonymous}
-              />
-            ))}
-          </div>
+          <>
+            <div className="space-y-6">
+              {tributes.map((tribute) => (
+                <TributeCard
+                  key={tribute.id}
+                  name={tribute.name}
+                  date={formatDate(tribute.created_at)}
+                  message={tribute.message}
+                  photoUrl={tribute.photo_url || undefined}
+                  isAnonymous={tribute.is_anonymous}
+                />
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            {pagination && pagination.totalPages > 1 && (
+              <div className="mt-12 flex flex-col items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1 || loading}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400"
+                    aria-label="Previous page"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
+                      .filter(page => {
+                        // Show first page, last page, current page, and pages around current
+                        return (
+                          page === 1 ||
+                          page === pagination.totalPages ||
+                          (page >= currentPage - 1 && page <= currentPage + 1)
+                        );
+                      })
+                      .map((page, index, array) => {
+                        // Add ellipsis if there's a gap
+                        const prevPage = array[index - 1];
+                        const showEllipsis = prevPage && page - prevPage > 1;
+                        
+                        return (
+                          <div key={page} className="flex items-center gap-1">
+                            {showEllipsis && (
+                              <span className="px-2 text-gray-500">...</span>
+                            )}
+                            <button
+                              onClick={() => handlePageChange(page)}
+                              disabled={loading}
+                              className={`px-4 py-2 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 ${
+                                currentPage === page
+                                  ? 'bg-gray-900 text-white'
+                                  : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                              }`}
+                              aria-label={`Page ${page}`}
+                              aria-current={currentPage === page ? 'page' : undefined}
+                            >
+                              {page}
+                            </button>
+                          </div>
+                        );
+                      })}
+                  </div>
+
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === pagination.totalPages || loading}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400"
+                    aria-label="Next page"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+
+                <p className="text-sm text-gray-600 font-sans">
+                  Showing {((currentPage - 1) * pagination.limit) + 1} - {Math.min(currentPage * pagination.limit, pagination.total)} of {pagination.total} tributes
+                </p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </section>
