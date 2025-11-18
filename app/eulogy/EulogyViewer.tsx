@@ -6,7 +6,10 @@ interface Props {
 
 export default function EulogyViewer({ initialUrl }: Props) {
   // Default to a PDF placed in `public/eulogy.pdf` if no initialUrl provided.
-  const url = initialUrl ?? "/eulogy.pdf";
+  const initial = initialUrl ?? "/eulogy.pdf";
+  // If the URL is external (starts with http(s)), route it through our proxy so it's same-origin
+  const isExternal = /^https?:\/\//i.test(initial);
+  const url = isExternal ? `/api/eulogy/proxy?url=${encodeURIComponent(initial)}` : initial;
 
   return (
     <div className="space-y-6">

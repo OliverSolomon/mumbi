@@ -5,6 +5,7 @@ import UnderConstructionBanner from "./components/UnderConstructionBanner";
 import Header from "./components/Header";
 import Hero from "./components/Hero";
 import MumbisStory from "./components/MumbisStory";
+import LiveStream from "./components/LiveStream";
 import Gallery from "./components/Gallery";
 import TributesList from "./components/TributesList";
 import TributeForm from "./components/TributeForm";
@@ -36,6 +37,7 @@ export default function Home() {
       <main>
         <Hero />
         <MumbisStory />
+        <LiveStream videoId={process.env.NEXT_PUBLIC_YOUTUBE_LIVE_ID} />
         <Gallery />
         <TributesList />
         <TributeForm onTributeSubmitted={() => {
