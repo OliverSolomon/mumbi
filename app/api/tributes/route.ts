@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { SITE_SLUG } from '@/lib/site';
 
 // GET: Fetch all tributes (no approval needed)
 export async function GET(request: NextRequest) {
@@ -13,6 +14,7 @@ export async function GET(request: NextRequest) {
     const { data, error, count } = await supabase
       .from('tributes')
       .select('*', { count: 'exact' })
+      .eq('site', SITE_SLUG)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -93,6 +95,7 @@ export async function POST(request: NextRequest) {
         message: sanitizedMessage,
         photo_url: userPhotoUrl,
         is_anonymous: isAnonymous || false,
+        site: SITE_SLUG,
       })
       .select()
       .single();

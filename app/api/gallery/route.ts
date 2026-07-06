@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { SITE_SLUG } from '@/lib/site';
 
 // GET: Fetch all gallery images
 export async function GET(request: NextRequest) {
@@ -10,6 +11,7 @@ export async function GET(request: NextRequest) {
     const { data: dbImages, error: dbError } = await supabase
       .from('gallery_images')
       .select('*')
+      .eq('site', SITE_SLUG)
       .order('created_at', { ascending: false });
 
     if (!dbError && dbImages && dbImages.length > 0) {
